@@ -1,0 +1,6 @@
+function fileName = date2name(d,well)
+% VID483_G2_1_2018y08m17d_01h56m
+fileName = strcat('VID483_',well,'_1_',string(d.Year),'y',...
+    sprintf('%02d', d.Month),'m',sprintf('%02d',d.Day),...
+    'd_',sprintf('%02d',d.Hour),'h',sprintf('%02d',d.Minute),'m');
+end
