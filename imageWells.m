@@ -2,7 +2,8 @@ clc
 clear
 set(0,'DefaultFigureWindowStyle','normal')
 close all
-
+% Pick well
+wellName = 'E6';
 % Load files from directory
 % files = dir('SampleWell');
 % files = {files.name};
@@ -18,8 +19,7 @@ for i = 1:length(files)
     wells(i) = string(well); dates{i} = date;
 end
 
-% Pick well
-wellName = 'C8';
+
 files = files(wells==wellName);
 dates = dates(wells==wellName);
 %%
@@ -31,5 +31,5 @@ for file = 1:1:length(files)
     centroidCell{file} = cellCountProcessed(files{file});
     centroidCount(file) = length(centroidCell{file});
 end
-
+%%
 save(['Well',wellName],'centroidCell','dates','centroidCount')

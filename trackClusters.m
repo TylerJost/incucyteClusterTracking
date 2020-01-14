@@ -4,10 +4,7 @@ function [allPar,clusterCell,tr] = trackClusters(dates,centroidCell,analysisStar
 % analysisStart is when the function should start tracking clusters
 % cellThresh is the minimum number of cells for a cluster
 
-% Preallocate
-imRange = analysisStart-1:-1:1;
-allPar = NaN(analysisStart,3,3);
-clusterCell = cell(analysisStart,3);
+
 % Find initial large clusters
 x = centroidCell{analysisStart};
 dbidx = dbscan(x,epsilon,minpts);
@@ -24,7 +21,10 @@ primaryClusters = cell(1,length(clusterI));
 for im = 1:length(primaryClusters)
     primaryClusters{im} = x(dbidx == clusterI(im),:);
 end
-
+% Preallocate allPar
+allPar = NaN(analysisStart,3,length(primaryClusters));
+imRange = analysisStart-1:-1:1;
+clusterCell = cell(analysisStart,length(primaryClusters));
 % Determine initial circle locations
 parCell = cell(length(primaryClusters),1);
 for cluster = 1:length(primaryClusters)

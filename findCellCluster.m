@@ -12,11 +12,13 @@ if sum(par) == 0
 end
 % epsilon = 30;
 % Find coordinates in last circle
+xo = x;
 xcmat = repmat(par(1),length(x),1);
 ycmat = repmat(par(2),length(x),1);
 circleDists = euclid(x(:,1),xcmat,x(:,2),ycmat);
 % x = x(circleDists<=par(3)*2,:);
-x = x(circleDists<=par(3)*2,:);
+% Check within a circle x times larger than the cluster
+x = x(circleDists<=par(3)*1.25,:);
 % Set number of neighbors
 % if length(x)<25 && length(x)>5
 %     epsilon = 15;
@@ -32,6 +34,13 @@ if sum(dbidx==-1) == length(dbidx)
     xyC = NaN;
     return
 end
+%%
+% % Optionally check what points the functions is trying to cluster
+% figure()
+% scatter(xo(:,1),xo(:,2),'.k')
+% hold on
+% gscatter(x(:,1),x(:,2),dbidx)
+%%
 primaryCluster = mode(dbidx(dbidx>0),'all');
 xyC = x(dbidx==primaryCluster,:);
 ntry = ntry+1;

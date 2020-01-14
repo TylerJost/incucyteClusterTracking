@@ -1,7 +1,9 @@
 %%
 clear
 close all
-load('WellE6.mat')
+% load('WellE6.mat')
+load('GH1818_E6.mat')
+% load('GH1818_G6.mat')
 set(0,'DefaultFigureWindowStyle','docked')
 %% Polynomial Fitting
 clc
@@ -18,16 +20,30 @@ plot(x,centroidCount,'b','linewidth',1.5)
 hold on
 plot(xp,fit,'--r','linewidth',1.5)
 % Find inflection point
-scatter(mindip,polyval(p,mindip),50,'gx','linewidth',2)
+% scatter(mindip,polyval(p,mindip),50,'gx','linewidth',2)
 xlabel('Time')
 ylabel('Number of Cells')
-%% Perform Initial Check
+%% Calibration
 figure()
 % Initial values to alter
-analysisStart = 138;
-cellThresh = 100;
+% Minimum number of cells for a cluster to start with
+% epsilon is the radius which checks for other core points
+% minpts is the minimum number of points that can be reached using epsilon
+%
+% For more explanation on DBSCAN see: 
+% https://en.wikipedia.org/wiki/DBSCAN#Preliminary
+% TODO: 
+% Set cellThresh based on # of cells
+% Download plate
+% Ask for Box access
+% Check against other cell lines
+% Validate segmentation
+
+analysisStart = round(0.5*length(centroidCell));
+cellThresh = round(.015*length(centroidCell{analysisStart}));
 epsilon = 20;
 minpts = 5;
+
 
 x = centroidCell{analysisStart};
 dbidx = dbscan(x,epsilon,minpts);
@@ -46,18 +62,18 @@ for im = 1:length(dbidx)
     end
 end
 clf
-titleInfo = sprintf('Cell Thresh = %g\nepsilon = %g\nminpts=%g',...
-    cellThresh,epsilon,minpts);
+titleInfo = sprintf('Analysis Start = %g\nCell Thresh = %g\nepsilon = %g\nminpts=%g',...
+    analysisStart,cellThresh,epsilon,minpts);
 gscatter(x(:,1),x(:,2),dbidx)
 title(titleInfo)
 %% Unsupervised Clustering
 close all
-[allPar,clusterCell,tr] = trackClusters(dates,centroidCell,analysisStart,cellThresh,epsilon,minpts);
+[allPar,clusterCell,tr] = trackClusters(wellDates,centroidCell,analysisStart,cellThresh,epsilon,minpts);
 %% Quick Plotting
 imRange = analysisStart-1:-1:1;
 % imRange = 35:-1:1;
-quickPlotWell(dates,imRange,clusterCell,centroidCell,allPar)
-%% Export Gif
+quickPlotWell(wellDates,imRange,clusterCell,centroidCell,allPar)
+%% Export Movie
 imRangePlot = analysisStart-1:-1:1;
-fileName = 'WellE6';
-makeWellGif(imRangePlot,fileName,allPar,clusterCell,dates,centroidCell)
+fileName = 'WellB3';
+makeWellMovie(imRangePlot,fileName,allPar,clusterCell,dates,centroidCell);

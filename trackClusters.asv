@@ -1,0 +1,81 @@
+function [allPar,clusterCell] = trackClusters(dates,centroidCell,analysisStart,cellThresh,epsilon,minpts)
+%trackClusters finds clusters of cells and tracks them over time
+% centroidCell is all locations of cells
+% analysisStart is when the function should start tracking clusters
+% cellThresh is the minimum number of cells for a cluster
+
+% Preallocate
+imRange = analysisStart-1:-1:1;
+allPar = NaN(analysisStart,3,3);
+clusterCell = cell(analysisStart,3);
+% Find initial large clusters
+x = centroidCell{analysisStart};
+dbidx = dbscan(x,epsilon,minpts);
+% Find primary clusters
+clusters = unique(dbidx(dbidx>0));
+clusterSizes = zeros(length(clusters),1);
+% Store cluster sizes
+for im = 1:length(clusters)
+    clusterSizes(im) = sum(dbidx==clusters(im));
+end
+% Separate clusters into cells
+clusterI = find(clusterSizes>cellThresh);
+primaryClusters = cell(1,length(clusterI));
+for im = 1:length(primaryClusters)
+    primaryClusters{im} = x(dbidx == clusterI(im),:);
+end
+
+% Determine initial circle locations
+parCell = cell(length(primaryClusters),1);
+for cluster = 1:length(primaryClusters)
+    xyC = primaryClusters{cluster};
+    par = CircleFitByPratt(findClusterExtrema(xyC));
+    parCell{cluster} = par;
+    
+    allPar(analysisStart,:,cluster) = [par(1),par(2),par(3)];
+    clusterCell{analysisStart,cluster} = xyC;
+end
+
+% perChangeArray = zeros(length(imRange),3);
+for im = imRange
+    xWhole = centroidCell{im};
+    % Find cluster for each identified major cluster
+    for cluster = length(parCell):-1:1
+        par = parCell{cluster};
+        % Check if new circle is significantly larger
+        a2 = par(3)^2*pi; % Current circle
+        a1 = allPar(im+1,3,cluster)^2*pi; % Old circle
+        perChange = (a2-a1)/abs(a1)*100;
+        % Large % Change/Current is bigger than prior/Cluster is active
+        if perChange>50 && sum(par) ~= 0
+            par = allPar(im+1,:,cluster);
+            parCell{cluster} = par;
+        end
+        % Find cell cluster in circle
+        %         [xyC,~] = findCellCluster(xWhole,10,3,parCell{cluster});
+        [xyC,~] = findCellCluster(xWhole,epsilon,minpts,0,parCell{cluster});
+        if isnan(xyC)
+            warning('Cluster %g not found \n',cluster)
+            % Set circle to 0 so that we don't try to find any more cells
+            parCell{cluster} = [0 0 0];
+            continue
+        end
+        % Save old circle information
+        allPar(im,:,cluster) = [par(1),par(2),par(3)];
+        clusterCell{im,cluster} = xyC;
+        % Store new circle based on new clustering
+        parCell{cluster} = CircleFitByPratt(findClusterExtrema(xyC));
+    end
+    fprintf('Image %g/%g\n',im,length(imRange))
+end
+
+% Find when cell cluster ended
+[nDates,nClusters] = size(clusterCell);
+tr = cell(nClusters,1);
+for cluster = 1:nClusters
+    for date = 1:nDates
+        if ~isempty(clusterCell{date,cluster})
+            tr{
+        end
+end
+end
