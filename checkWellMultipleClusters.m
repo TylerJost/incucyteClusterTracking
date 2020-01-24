@@ -1,12 +1,14 @@
-%%
+%% Load Data
 clear
+clc
 close all
-% load('WellE6.mat')
-load('GH1818_E6.mat')
-% load('GH1818_G6.mat')
+% fileName = 'GH1818_E7.mat';
+fileName = 'GH1818_B2.mat';
+% fileName = 'WellE6.mat';
+% fileName = 'GH1818_E6.mat';
+load(fileName)
 set(0,'DefaultFigureWindowStyle','docked')
 %% Polynomial Fitting
-clc
 % Fit third order polynomial to cell count data
 x = 1:length(centroidCell);
 p = polyfit(x',centroidCount,3);
@@ -39,10 +41,10 @@ figure()
 % Check against other cell lines
 % Validate segmentation
 
-analysisStart = round(0.5*length(centroidCell));
+analysisStart = round(0.6*length(centroidCell));
 cellThresh = round(.015*length(centroidCell{analysisStart}));
-epsilon = 20;
-minpts = 5;
+epsilon = 16;
+minpts = 4;
 
 
 x = centroidCell{analysisStart};
@@ -66,14 +68,24 @@ titleInfo = sprintf('Analysis Start = %g\nCell Thresh = %g\nepsilon = %g\nminpts
     analysisStart,cellThresh,epsilon,minpts);
 gscatter(x(:,1),x(:,2),dbidx)
 title(titleInfo)
+%% Auto Calibration
+epsilon = 16;
+minpts = 4;
+[analysisStart,cellThresh] = autoCalibrateAnalysisStart(centroidCell,epsilon,minpts,'view');
 %% Unsupervised Clustering
 close all
-[allPar,clusterCell,tr] = trackClusters(wellDates,centroidCell,analysisStart,cellThresh,epsilon,minpts);
+sizeI = 1.2;
+[polyCell,clusterCell,tr] = trackClusters(wellDates,centroidCell,sizeI,analysisStart,cellThresh,epsilon,minpts);
 %% Quick Plotting
 imRange = analysisStart-1:-1:1;
-% imRange = 35:-1:1;
-quickPlotWell(wellDates,imRange,clusterCell,centroidCell,allPar)
+% imRange = analysisStart-1:-1:135;
+% imRange = 102:-1:35;
+quickPlotWell(wellDates,imRange,clusterCell,centroidCell,polyCell)
 %% Export Movie
 imRangePlot = analysisStart-1:-1:1;
-fileName = 'WellB3';
-makeWellMovie(imRangePlot,fileName,allPar,clusterCell,dates,centroidCell);
+F = makeWellMovie(imRangePlot,fileName,polyCell,clusterCell,wellDates,centroidCell);
+% Create video
+vw = VideoWriter(sprintf('%s.avi',fileName));
+open(vw)
+writeVideo(vw,F)
+close(vw)

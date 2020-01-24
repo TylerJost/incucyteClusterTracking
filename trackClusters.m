@@ -1,4 +1,4 @@
-function [allPar,clusterCell,tr] = trackClusters(dates,centroidCell,analysisStart,cellThresh,epsilon,minpts)
+function [polyCell,clusterCell,tr] = trackClusters(dates,centroidCell,sizeI,analysisStart,cellThresh,epsilon,minpts)
 %trackClusters finds clusters of cells and tracks them over time
 % centroidCell is all locations of cells
 % analysisStart is when the function should start tracking clusters
@@ -9,64 +9,83 @@ function [allPar,clusterCell,tr] = trackClusters(dates,centroidCell,analysisStar
 x = centroidCell{analysisStart};
 dbidx = dbscan(x,epsilon,minpts);
 % Find primary clusters
-clusters = unique(dbidx(dbidx>0));
-clusterSizes = zeros(length(clusters),1);
 % Store cluster sizes
-for im = 1:length(clusters)
-    clusterSizes(im) = sum(dbidx==clusters(im));
-end
+[C,~,ic] = unique(dbidx);
+counts = accumarray(ic,1);
+cs = sortrows([C, counts],2,'descend');
+cs(cs(:,1)==-1,:) = [];
+
 % Separate clusters into cells
-clusterI = find(clusterSizes>cellThresh);
+clusterI = find(cs(:,2)>cellThresh);
 primaryClusters = cell(1,length(clusterI));
 for im = 1:length(primaryClusters)
-    primaryClusters{im} = x(dbidx == clusterI(im),:);
+    primaryClusters{im} = x(dbidx == cs(clusterI(im),1),:);
 end
+
 % Preallocate allPar
-allPar = NaN(analysisStart,3,length(primaryClusters));
 imRange = analysisStart-1:-1:1;
 clusterCell = cell(analysisStart,length(primaryClusters));
+% Store polygon vertices in cell
+polyCell = cell(size(clusterCell));
 % Determine initial circle locations
-parCell = cell(length(primaryClusters),1);
+currentVerts = cell(length(primaryClusters),1);
 for cluster = 1:length(primaryClusters)
     xyC = primaryClusters{cluster};
-    par = CircleFitByPratt(findClusterExtrema(xyC));
-    parCell{cluster} = par;
+    polyVerts = dilateHull(xyC,sizeI);
     
-    allPar(analysisStart,:,cluster) = [par(1),par(2),par(3)];
+    currentVerts{cluster} = polyVerts;
+    
+    %     allPar(analysisStart,:,cluster) = [par(1),par(2),par(3)];
     clusterCell{analysisStart,cluster} = xyC;
+    polyCell{analysisStart,cluster} = polyVerts;
 end
 
 % perChangeArray = zeros(length(imRange),3);
 for im = imRange
     xWhole = centroidCell{im};
     % Find cluster for each identified major cluster
-    for cluster = length(parCell):-1:1
-        par = parCell{cluster};
+    %     for cluster = length(currentVerts):-1:1
+    for cluster = 1:length(currentVerts)
+        verts = currentVerts{cluster};
         % Check if new circle is significantly larger
-        a2 = par(3)^2*pi; % Current circle
-        a1 = allPar(im+1,3,cluster)^2*pi; % Old circle
+        a2 = polyarea(verts(:,1),verts(:,2));
+        a1 = polyarea(polyCell{im+1,cluster}(:,1),polyCell{im+1,cluster}(:,2));
+        
         perChange = (a2-a1)/abs(a1)*100;
-        % Large % Change/Current is bigger than prior/Cluster is active
-        if perChange>50 && sum(par) ~= 0
-            par = allPar(im+1,:,cluster);
-            parCell{cluster} = par;
+        % Large % Change/Cluster is active
+        % Will need to make a way to ensure cluster is active or not ~~~
+        if perChange>50 && all(sum(verts) ~= 0)
+            verts = polyCell{im+1,cluster};
+            currentVerts{cluster} = verts;
         end
         % Find cell cluster in circle
-        %         [xyC,~] = findCellCluster(xWhole,10,3,parCell{cluster});
-        [xyC,~] = findCellCluster(xWhole,epsilon,minpts,0,parCell{cluster});
-        if isnan(xyC)
+        [xyC,~] = findCellCluster(xWhole,epsilon,minpts,0,currentVerts{cluster});
+        % If a cluster isn't found, mark it
+        if isempty(xyC) || ~iscell(xyC)
             warning('Cluster %g not found \n',cluster)
-            % Set circle to 0 so that we don't try to find any more cells
-            parCell{cluster} = [0 0 0];
+            currentVerts{cluster} = [0 0];
+            polyCell{im,cluster} = [0 0];
             continue
         end
         % Save old circle information
-        allPar(im,:,cluster) = [par(1),par(2),par(3)];
-        clusterCell{im,cluster} = xyC;
-        % Store new circle based on new clustering
-        parCell{cluster} = CircleFitByPratt(findClusterExtrema(xyC));
+        for subcluster = 1:length(xyC)
+            if subcluster>1
+                cluster = length(currentVerts)+1;
+            end
+            polyCell{im,cluster} = verts;
+            clusterCell{im,cluster} = xyC{subcluster};
+            % Store new circle based on new clustering
+            % Set minimum cluster area to be 18500
+            [currentVerts{cluster},clusterA] = dilateHull(xyC{subcluster},sizeI);
+%             minArea = 6000;
+%             if clusterA<minArea
+%                 sizeFactor = minArea/clusterA;
+%                 [currentVerts{cluster}, ~] = dilateHull(xyC{subcluster},sizeFactor);
+%             end
+        end
     end
     fprintf('Image %g/%g\n',im,length(imRange))
+%     quickPlotWell(NaN,im,clusterCell,centroidCell,polyCell)
 end
 
 % Find when cell cluster ended
