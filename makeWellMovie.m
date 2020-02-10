@@ -7,7 +7,10 @@ function F = makeWellMovie(imRangePlot,fileName,polyCell,clusterCell,dates,centr
 % dates has the dates of each frame
 % centroidCell has all the cell locations (as centroids)
 close all
-h = figure();
+vw = VideoWriter(sprintf('%s_New.avi',fileName),'Motion JPEG AVI');
+vw.Quality = 100;
+open(vw);
+h = figure('units','normalized','outerposition',[0 0 1 1]);
 [allParSize,c] = size(polyCell);
 % if length(allParSize)<3
 %     nClusters = 1;
@@ -78,8 +81,11 @@ for im = imRangePlot
 %         imwrite(imind,cm,fileName,'gif','WriteMode','append');
 %     end
 
-    F(im) = getframe(h);
+    frame = getframe(h);
+    writeVideo(vw,frame)
     clf
     
 end
+close(vw)
+F = nan;
 end

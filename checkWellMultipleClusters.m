@@ -2,10 +2,10 @@
 clear
 clc
 close all
-% fileName = 'GH1818_E7.mat';
-fileName = 'GH1818_B2.mat';
-% fileName = 'WellE6.mat';
-% fileName = 'GH1818_E6.mat';
+% fileName = 'GH1818_F7.mat'; % Poor cluster splitting
+fileName = 'GH1818_E3.mat'; % Non-dense well
+% fileName = 'GH1818_E6.mat'; % Ideal-case well
+% fileName = 'GH1818_B3.mat'; % Cutting off too early
 load(fileName)
 set(0,'DefaultFigureWindowStyle','docked')
 %% Polynomial Fitting
@@ -34,14 +34,8 @@ figure()
 %
 % For more explanation on DBSCAN see: 
 % https://en.wikipedia.org/wiki/DBSCAN#Preliminary
-% TODO: 
-% Set cellThresh based on # of cells
-% Download plate
-% Ask for Box access
-% Check against other cell lines
-% Validate segmentation
 
-analysisStart = round(0.6*length(centroidCell));
+analysisStart = round(0.8*length(centroidCell));
 cellThresh = round(.015*length(centroidCell{analysisStart}));
 epsilon = 16;
 minpts = 4;
@@ -69,23 +63,32 @@ titleInfo = sprintf('Analysis Start = %g\nCell Thresh = %g\nepsilon = %g\nminpts
 gscatter(x(:,1),x(:,2),dbidx)
 title(titleInfo)
 %% Auto Calibration
+clc
 epsilon = 16;
 minpts = 4;
-[analysisStart,cellThresh] = autoCalibrateAnalysisStart(centroidCell,epsilon,minpts,'view');
+[analysisStart,cellThresh,epsilon] = autoCalibrateAnalysisStart(centroidCell,epsilon,minpts,'view');
 %% Unsupervised Clustering
 close all
+clc
 sizeI = 1.2;
+tic
 [polyCell,clusterCell,tr] = trackClusters(wellDates,centroidCell,sizeI,analysisStart,cellThresh,epsilon,minpts);
+tr
+toc
 %% Quick Plotting
-imRange = analysisStart-1:-1:1;
-% imRange = analysisStart-1:-1:135;
-% imRange = 102:-1:35;
+imRange = analysisStart:-1:1;
+% imRange = analysisStart-1:-1:86;
+% imRange = 80:-1:1;
+close all
+set(0,'DefaultFigureWindowStyle','docked')
 quickPlotWell(wellDates,imRange,clusterCell,centroidCell,polyCell)
 %% Export Movie
-imRangePlot = analysisStart-1:-1:1;
+% imRangePlot = analysisStart:-1:1;
+imRangePlot = 1:1:analysisStart;
+set(0,'DefaultFigureWindowStyle','normal')
 F = makeWellMovie(imRangePlot,fileName,polyCell,clusterCell,wellDates,centroidCell);
-% Create video
-vw = VideoWriter(sprintf('%s.avi',fileName));
+%% Create video
+vw = VideoWriter(sprintf('%s_New.avi',fileName));
 open(vw)
 writeVideo(vw,F)
 close(vw)

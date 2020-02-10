@@ -44,8 +44,9 @@ if sum(dbidx==-1) == length(dbidx)
     return
 end
 %%
-% % Optionally check what points the functions is trying to cluster
+% Optionally check what points the functions is trying to cluster
 % figure(1)
+% clf
 % scatter(xo(:,1),xo(:,2),'.k')
 % hold on
 % gscatter(x(:,1),x(:,2),dbidx)
@@ -53,13 +54,17 @@ end
 [C,ia,ic] = unique(dbidx);
 counts = accumarray(ic,1);
 clusterSizes = sortrows([C, counts./length(xo)],2,'descend');
+% Get rid of unclassified points
 clusterSizes(clusterSizes(:,1)==-1,:) = [];
 primaryCluster = clusterSizes(1,:);
+% Get rid of largest cluster
 clusterSizes(1,:) = [];
-clusterSizes(clusterSizes(:,2)<=0.1,:) = [];
+% Get rid of clusters less than 7.5% of the original cluster
+clusterSizes(clusterSizes(:,2)<=0.065,:) = [];
 clusterSizes = [primaryCluster; clusterSizes];
 xyC = cell(length(clusterSizes(:,1)),1);
-for i = 1:length(clusterSizes(:,1))
+[nClusters,~] = size(clusterSizes);
+for i = 1:nClusters
     xyC{i} = x(dbidx == clusterSizes(i,1),:);
 end
 ntry = ntry+1;

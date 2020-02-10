@@ -8,18 +8,19 @@ function [polyCell,clusterCell,tr] = trackClusters(dates,centroidCell,sizeI,anal
 % Find initial large clusters
 x = centroidCell{analysisStart};
 dbidx = dbscan(x,epsilon,minpts);
-% Find primary clusters
-% Store cluster sizes
-[C,~,ic] = unique(dbidx);
+% New  Initial Cell Cluster
+[C,ia,ic] = unique(dbidx);
 counts = accumarray(ic,1);
-cs = sortrows([C, counts],2,'descend');
-cs(cs(:,1)==-1,:) = [];
-
-% Separate clusters into cells
-clusterI = find(cs(:,2)>cellThresh);
-primaryClusters = cell(1,length(clusterI));
+clusterSizes = sortrows([C, counts],2,'descend');
+clusterSizes(clusterSizes(:,1)==-1,:) = [];
+if epsilon>16
+    cellThresh = 350;
+end
+clusterSizes(clusterSizes(:,2)<cellThresh,:) = [];
+[nClusters,~] = size(clusterSizes);
+primaryClusters = cell(1,nClusters);
 for im = 1:length(primaryClusters)
-    primaryClusters{im} = x(dbidx == cs(clusterI(im),1),:);
+    primaryClusters{im} = x(dbidx==clusterSizes(im,1),:);
 end
 
 % Preallocate allPar
@@ -29,6 +30,8 @@ clusterCell = cell(analysisStart,length(primaryClusters));
 polyCell = cell(size(clusterCell));
 % Determine initial circle locations
 currentVerts = cell(length(primaryClusters),1);
+epsilonCluster = repmat(epsilon,length(primaryClusters),1);
+minptsCluster = repmat(minpts,length(primaryClusters),1);
 for cluster = 1:length(primaryClusters)
     xyC = primaryClusters{cluster};
     polyVerts = dilateHull(xyC,sizeI);
@@ -39,13 +42,14 @@ for cluster = 1:length(primaryClusters)
     clusterCell{analysisStart,cluster} = xyC;
     polyCell{analysisStart,cluster} = polyVerts;
 end
-
+sizeFactors = genSizeFactors(1:100,sizeI,2.5);
 % perChangeArray = zeros(length(imRange),3);
 for im = imRange
     xWhole = centroidCell{im};
     % Find cluster for each identified major cluster
     %     for cluster = length(currentVerts):-1:1
     for cluster = 1:length(currentVerts)
+        fprintf('\tCluster %g/%g\n',cluster,length(currentVerts))
         verts = currentVerts{cluster};
         % Check if new circle is significantly larger
         a2 = polyarea(verts(:,1),verts(:,2));
@@ -53,13 +57,12 @@ for im = imRange
         
         perChange = (a2-a1)/abs(a1)*100;
         % Large % Change/Cluster is active
-        % Will need to make a way to ensure cluster is active or not ~~~
         if perChange>50 && all(sum(verts) ~= 0)
             verts = polyCell{im+1,cluster};
             currentVerts{cluster} = verts;
         end
         % Find cell cluster in circle
-        [xyC,~] = findCellCluster(xWhole,epsilon,minpts,0,currentVerts{cluster});
+        [xyC,~] = findCellCluster(xWhole,epsilonCluster(cluster),minptsCluster(cluster),0,currentVerts{cluster});
         % If a cluster isn't found, mark it
         if isempty(xyC) || ~iscell(xyC)
             warning('Cluster %g not found \n',cluster)
@@ -76,12 +79,28 @@ for im = imRange
             clusterCell{im,cluster} = xyC{subcluster};
             % Store new circle based on new clustering
             % Set minimum cluster area to be 18500
-            [currentVerts{cluster},clusterA] = dilateHull(xyC{subcluster},sizeI);
-%             minArea = 6000;
+%             earliestCluster = find(~cellfun(@isempty,clusterCell(:,subcluster)));
+%             earliestCluster = earliestCluster(end);
+%             clusterPercent = length(xyC{subcluster})/length(clusterCell{earliestCluster,subcluster})*100;
+            if length(xyC{subcluster})>150
+                [newVerts,clusterA] = dilateHull(xyC{subcluster},1.2);
+            else
+                [newVerts,clusterA] = dilateHull(xyC{subcluster},3);
+            end
+
+
+            minArea = 8000;
 %             if clusterA<minArea
-%                 sizeFactor = minArea/clusterA;
-%                 [currentVerts{cluster}, ~] = dilateHull(xyC{subcluster},sizeFactor);
+% %                 sizeFactor = minArea/clusterA;
+% %                 [currentVerts{cluster}, ~] = dilateHull(xyC{subcluster},sizeFactor);
+%                 epsilonCluster(cluster) = epsilon;
+%                 minptsCluster(cluster) = 6;
+%             else
+                currentVerts{cluster} = newVerts;
+                epsilonCluster(cluster) = epsilon;
+                minptsCluster(cluster) = minpts;
 %             end
+            
         end
     end
     fprintf('Image %g/%g\n',im,length(imRange))

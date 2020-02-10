@@ -3,9 +3,9 @@ clc
 clear
 %% Input
 % Organize data such that all Incucyte images are in one folder
-dataLocation = 'C:\Users\lucif\Box\Research\IncucyteData\GH1818';
+dataLocation = 'C:\Users\lucif\Box\Research\trCalculation\Data\GH1818';
 % Ideally save in a different location
-saveLocation = 'C:\Users\lucif\Box\Research\IncucyteData\trAnalysis';
+saveLocation = 'C:\Users\lucif\Box\Research\trCalculation\trAnalysis';
 %% Load Well File Names
 cd(dataLocation)
 files = dir('*.mat');
@@ -24,15 +24,15 @@ for file = 1:length(files)
     nameSplit = strsplit(fileName,'.');
     analysisName = [nameSplit{1},'_trAnalysis.mat'];
     fprintf('\tAnalyzing %s (%.2g%%)\n',fileName,file/length(files)*100)
-    if any(analysisFiles==analysisName)
-        fprintf('\tAlready Analyzed\n')
-        continue
-    end
+    %     if any(analysisFiles==analysisName)
+    %         fprintf('\tAlready Analyzed\n')
+    %         continue
+    %     end
     load(fileName)
     % Calibrate starting point for analysis
     epsilon = 16;
     minpts = 4;
-    [analysisStart,cellThresh] = autoCalibrateAnalysisStart(centroidCell,epsilon,minpts);
+    [analysisStart,cellThresh,epsilon] = autoCalibrateAnalysisStart(centroidCell,epsilon,minpts);
     % Track the clusters
     sizeI = 1.2;
     if ~isnan(analysisStart)
@@ -41,5 +41,5 @@ for file = 1:length(files)
         polyCell = NaN; clusterCell = NaN; tr = NaN;
     end
     cd(saveLocation)
-    save(analysisName,'analysisStart','cellThresh','polyCell','clusterCell','tr')
+    save(analysisName,'centroidCell','wellDates','analysisStart','cellThresh','polyCell','clusterCell','tr')
 end
