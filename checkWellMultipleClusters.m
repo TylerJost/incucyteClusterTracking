@@ -3,9 +3,10 @@ clear
 clc
 close all
 % fileName = 'GH1818_F7.mat'; % Poor cluster splitting
-fileName = 'GH1818_E3.mat'; % Non-dense well
+% fileName = 'GH1818_E3.mat'; % Non-dense well
 % fileName = 'GH1818_E6.mat'; % Ideal-case well
-% fileName = 'GH1818_B3.mat'; % Cutting off too early
+fileName = 'GH1818_B3.mat'; % Cutting off too early
+% fileName = 'GH1818_F5.mat'; % Current problem child
 load(fileName)
 set(0,'DefaultFigureWindowStyle','docked')
 %% Polynomial Fitting

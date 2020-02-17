@@ -7,7 +7,7 @@ function F = makeWellMovie(imRangePlot,fileName,polyCell,clusterCell,dates,centr
 % dates has the dates of each frame
 % centroidCell has all the cell locations (as centroids)
 close all
-vw = VideoWriter(sprintf('%s_New.avi',fileName),'Motion JPEG AVI');
+vw = VideoWriter(sprintf('%s.avi',fileName),'Motion JPEG AVI');
 vw.Quality = 100;
 open(vw);
 h = figure('units','normalized','outerposition',[0 0 1 1]);
@@ -50,9 +50,7 @@ for im = imRangePlot
             imWell = insertMarker(imWell, xyC, '*', 'Color', 'cyan');
             vertsPoly = zeros(1,length(verts)*2);
             vertsPoly(1:2:end) = verts(:,1); vertsPoly(2:2:end) = verts(:,2);
-            imWell = insertShape(imWell,'Polygon',...
-                vertsPoly,...
-                'LineWidth',5);
+            imWell = insertShape(imWell,'Polygon',vertsPoly,'LineWidth',5);
             imshow(flipud(imWell))
             title(string(im))
         end

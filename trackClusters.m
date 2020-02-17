@@ -42,7 +42,7 @@ for cluster = 1:length(primaryClusters)
     clusterCell{analysisStart,cluster} = xyC;
     polyCell{analysisStart,cluster} = polyVerts;
 end
-sizeFactors = genSizeFactors(1:100,sizeI,2.5);
+sizeFactors = genSizeFactors(118:imRange(1),sizeI,2.5);
 % perChangeArray = zeros(length(imRange),3);
 for im = imRange
     xWhole = centroidCell{im};
@@ -57,7 +57,7 @@ for im = imRange
         
         perChange = (a2-a1)/abs(a1)*100;
         % Large % Change/Cluster is active
-        if perChange>50 && all(sum(verts) ~= 0)
+        if (perChange)>50 && all(sum(verts) ~= 0)
             verts = polyCell{im+1,cluster};
             currentVerts{cluster} = verts;
         end
@@ -73,48 +73,63 @@ for im = imRange
         % Save old circle information
         for subcluster = 1:length(xyC)
             if subcluster>1
+                % Add on new cluster if found (not computationally
+                % efficient)
                 cluster = length(currentVerts)+1;
             end
             polyCell{im,cluster} = verts;
             clusterCell{im,cluster} = xyC{subcluster};
-            % Store new circle based on new clustering
-            % Set minimum cluster area to be 18500
-%             earliestCluster = find(~cellfun(@isempty,clusterCell(:,subcluster)));
-%             earliestCluster = earliestCluster(end);
-%             clusterPercent = length(xyC{subcluster})/length(clusterCell{earliestCluster,subcluster})*100;
-            if length(xyC{subcluster})>150
-                [newVerts,clusterA] = dilateHull(xyC{subcluster},1.2);
-            else
-                [newVerts,clusterA] = dilateHull(xyC{subcluster},3);
-            end
-
-
-            minArea = 8000;
-%             if clusterA<minArea
-% %                 sizeFactor = minArea/clusterA;
-% %                 [currentVerts{cluster}, ~] = dilateHull(xyC{subcluster},sizeFactor);
-%                 epsilonCluster(cluster) = epsilon;
-%                 minptsCluster(cluster) = 6;
-%             else
-                currentVerts{cluster} = newVerts;
-                epsilonCluster(cluster) = epsilon;
-                minptsCluster(cluster) = minpts;
-%             end
+            
+            currentSizeFactor = sizeFactors(round(im/length(imRange)*length(sizeFactors)));
+            [newVerts,clusterA] = dilateHull(xyC{subcluster},currentSizeFactor);
+            
+            % Update values
+            currentVerts{cluster} = newVerts;
+            epsilonCluster(cluster) = epsilon;
+            minptsCluster(cluster) = minpts;
             
         end
     end
     fprintf('Image %g/%g\n',im,length(imRange))
-%     quickPlotWell(NaN,im,clusterCell,centroidCell,polyCell)
+    %     quickPlotWell(NaN,im,clusterCell,centroidCell,polyCell)
 end
 
 % Find when cell cluster ended
 [nDates,nClusters] = size(clusterCell);
 tr = cell(nClusters,1);
 for cluster = 1:nClusters
+    currentCluster = clusterCell(:,cluster);
+    ccCount = zeros(length(currentCluster),1);
+    for i = 1:length(ccCount)
+        ccCount(i) = length(currentCluster{i});
+    end
+    
+    
+    
+    
+    
     for date = 1:nDates
         % Find the time to a cluster formation
         if ~isempty(clusterCell{date,cluster})
-            tr{cluster} = dates{date}-dates{1};
+            ccCountInit = find(ccCount~=0);
+            ccCountT = ccCount(1:ccCountInit(1)+.4*(length(ccCount)-ccCountInit(1)));
+            x = 1:length(ccCountT);
+            x = x(:);
+            x0 = date; y0 = ccCount(date);
+            g = @(p,x)y0*exp(p*(x-x0));
+            f = fit(x,ccCountT,g);
+            tDouble = log(2)/f.p;
+            %             figure
+            %             plot(f,x,ccCountT)
+            %             hold on
+            numDouble = log(ccCount(date))/log(2);
+            dateIndex = round(date-numDouble*tDouble);
+            if dateIndex > 1
+                tr{cluster} = dates{dateIndex}-dates{1};
+            else
+                tr{cluster} = dates{date}-dates{1};
+            end
+            
             break
         end
     end

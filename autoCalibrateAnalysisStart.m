@@ -68,6 +68,10 @@ while true
         continue
     elseif max(clusterSizes)<absMin
         startPercentInit = startPercentInit - decrease;
+        if startPercentInit<=minStartPerc
+            clusterFound = 0;
+            break
+        end
         fprintf('Cluster too small (%g%%)\n',max(clusterSizes)/length(x)*100)
     end
     
@@ -80,6 +84,10 @@ while true
     elseif clusterPercent>=maxClusterPerc
         % Decrease by specified amount
         startPercentInit = startPercentInit - decrease;
+        if startPercentInit<=minStartPerc
+            clusterFound = 0;
+            break
+        end
         fprintf('Cluster too large (%g%%)\n',max(clusterSizes)/length(x)*100)
     elseif max(clusterSizes)>absMin && startPercentInit>=minStartPerc
         fprintf('Optimal cluster found (%g%%)\n',max(clusterSizes)/length(x)*100)
