@@ -48,7 +48,7 @@ The mechanics behind the cluster tracking is in the function ```trackClusters```
 * The DBSCAN algorithm will inevitably find many clusters, most of which are not actual clusters. However, if a cluster is large enough relative to the previous cluster, it will split and count as two clusters. 
 * The algorithm continues until it can no longer find a cluster. 
 
-### Troubleshooting for Better Cluster Tracking
+## Troubleshooting for Better Cluster Tracking
 While one parameter set might work for one well, it likely won't work for all wells. It is important to find the ideal set of parameters which works for the most wells (obviously). Once you are happy with a set of parameters (or think you are), a practice run should be performed on all wells in the plate. This is done using ```runRapidValidation```. To validate your parameter set, use the set of images in the "wellsSnapshot" folder which should be created. Adjust any necessary parameters and readjust per the table below.
 
 Finally, to fully validate and determine how satisfied you are with your parameter set, you should generate videos using ```Video Maker.ipynb```. 
@@ -59,8 +59,3 @@ Finally, to fully validate and determine how satisfied you are with your paramet
 | minpts | Increase when clusters are not tracking for long enough. Typically, this is used for less dense clusters which end prematurely. |
 | absMin  | Adjust rarely when calibration is not working properly. This is a case by case basis. |
 | sizeI | Increase when clusters are not tracking for long enough, typically near the end when they are close to disappearing but need a stronger push. |
-
-
-
-## Tracking an Entire Plate
-Calibrating for each plate is the most difficult part, and once the ideal parameters are deter
