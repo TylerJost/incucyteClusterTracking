@@ -43,13 +43,6 @@ if sum(dbidx==-1) == length(dbidx)
     xyC = NaN;
     return
 end
-%%
-% Optionally check what points the functions is trying to cluster
-% figure(1)
-% clf
-% scatter(xo(:,1),xo(:,2),'.k')
-% hold on
-% gscatter(x(:,1),x(:,2),dbidx)
 %% Finding Primary Clusters
 [C,ia,ic] = unique(dbidx);
 counts = accumarray(ic,1);
@@ -60,7 +53,7 @@ primaryCluster = clusterSizes(1,:);
 % Get rid of largest cluster
 clusterSizes(1,:) = [];
 % Get rid of clusters less than 7.5% of the original cluster
-clusterSizes(clusterSizes(:,2)<=0.065,:) = [];
+clusterSizes(clusterSizes(:,2)<=0.15,:) = [];
 clusterSizes = [primaryCluster; clusterSizes];
 xyC = cell(length(clusterSizes(:,1)),1);
 [nClusters,~] = size(clusterSizes);
@@ -68,4 +61,22 @@ for i = 1:nClusters
     xyC{i} = x(dbidx == clusterSizes(i,1),:);
 end
 ntry = ntry+1;
+%%
+% Optionally check what points the functions is trying to cluster
+% figure(1)
+% clf
+% subplot(131)
+% scatter(xo(:,1),xo(:,2),'.k')
+% hold on
+% gscatter(x(:,1),x(:,2),dbidx,lines(6),'.',6,'off')
+% subplot(132)
+% for i = 1:length(dbidx)
+% if ~any(dbidx(i)==clusterSizes(:,1))
+% dbidx(i) = -1;
+% end
+% end
+% scatter(xo(:,1),xo(:,2),'.k')
+% hold on
+% gscatter(x(:,1),x(:,2),dbidx,lines(6))
+
 end
